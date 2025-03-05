@@ -1,0 +1,25 @@
+{
+  "name": "discord-assistant",
+  "module": "src/index.ts",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@langchain/core": "^0.3.42",
+    "@langchain/deepseek": "^0.0.1",
+    "@langchain/openai": "^0.4.4",
+    "chalk": "^5.4.1",
+    "discord.js": "^14.18.0",
+    "langchain": "^0.3.19",
+    "zod": "^3.24.2"
+  },
+  "scripts": {
+    "start": "bun src/index.ts",
+    "build": "tsc",
+    "dev": "bun run --watch src/index.ts"
+  }
+}
