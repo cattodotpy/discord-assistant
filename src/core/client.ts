@@ -39,7 +39,9 @@ export class DiscordAssistant extends Client {
     public async initialize() {
         this.on("ready", () => {
             console.log(
-                `${chalk.green("Logged in as")} ${chalk.blue(this.user?.tag)}`
+                `${chalk.green("v1 Logged in as")} ${chalk.blue(
+                    this.user?.tag
+                )}`
             );
             console.log(
                 `${chalk.green("Started at")} ${chalk.blue(

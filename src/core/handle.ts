@@ -32,7 +32,7 @@ export async function handleMessage(
         return await request.reply("I have hallucinated, please try again.");
 
     const msgId = await request.reply({
-        content: responseChunks.content.toString(),
+        content: responseChunks.content.toString().slice(0, 2000),
         embeds: responseChunks.embeds.map((embed) => {
             return new EmbedBuilder(embed);
         }),
