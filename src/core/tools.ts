@@ -50,7 +50,7 @@ export function createGetUserTool(client: DiscordAssistant, guildId?: string) {
         {
             name: "getUser",
             description:
-                "Get a discord user by their ID or username, the result is a JSON object of the user, do not provide the JSON data to the user unless specified",
+                "Get a discord user by their ID or username, only one of them can exist, the result is a JSON object of the user, do not provide the JSON data to the user unless specified",
             schema: getUserToolSchema,
         }
     );

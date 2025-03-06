@@ -23,7 +23,8 @@ export class DiscordAssistant extends Client {
         this.llm = new LLMManager(
             {
                 apiKey: this.env.LLM_API_KEY,
-                reasoning: false,
+                baseURL: this.env.LLM_BASE_URL,
+                model: "deepseek-chat",
             },
             this
         );

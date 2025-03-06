@@ -1,4 +1,4 @@
-import { type Message } from "discord.js";
+import { Embed, EmbedBuilder, type Message } from "discord.js";
 import type { DiscordAssistant } from "./client";
 
 let myMessages = [] as string[];
@@ -31,7 +31,12 @@ export async function handleMessage(
     if (!responseChunks)
         return await request.reply("I have hallucinated, please try again.");
 
-    const msgId = await request.reply(responseChunks.content.toString());
+    const msgId = await request.reply({
+        content: responseChunks.content.toString(),
+        embeds: responseChunks.embeds.map((embed) => {
+            return new EmbedBuilder(embed);
+        }),
+    });
 
     myMessages.push(msgId.id);
 }
