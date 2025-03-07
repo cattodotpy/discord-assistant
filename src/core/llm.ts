@@ -30,26 +30,50 @@ Do not generate wrong facts out of thin air
 You may make use of Discord's formatting to format your messages. For example, you can use **bold text**, *italic text*, __underline text__, and more. You can also use emojis and mention users or roles.
 Also, you may use the embed to help you visualize your responses when needed.
 
+You can use the tools provided to gather information and provide more accurate responses.
+
+User messages usually uses mentions in the form of <@USER_ID> or <@!USER_ID> for users, <@&ROLE_ID> for roles, and <#CHANNEL_ID> for channels
+You can use these IDs with the provided tools to gather more information about the mentioned entities.
+
+You may use tools repeatedly to gather more information about the entities.
+For example, if the user asks for the roles of a user, you can use the GetUser tool to get the user and then use the GetRoles tool to get the roles of the user.
+
+You're required to follow the following structure for your responses:
+- The content of the message should be a string.
+- The embeds should be an array of objects, each object should have the following properties:
+    - title: a string
+    - description: a string (optional)
+    - url: a string (optional)
+    - color: a number (optional)
+    - fields: an array of objects, each object should have the following properties:
+        - name: a string
+        - value: a string
+        - inline: a boolean
 `
 );
 
 const messageStructure = z.object({
-    content: z.string(),
-    embeds: z.array(
-        z.object({
-            title: z.string(),
-            description: z.string().optional(),
-            url: z.string().optional(),
-            color: z.number().optional(),
-            fields: z.array(
-                z.object({
-                    name: z.string(),
-                    value: z.string(),
-                    inline: z.boolean(),
+    content: z.string().describe("The content of the Discord message."),
+    embeds: z
+        .array(
+            z
+                .object({
+                    title: z.string(),
+                    description: z.string().optional(),
+                    url: z.string().optional(),
+                    color: z.number().optional(),
+                    fields: z.array(
+                        z.object({
+                            name: z.string(),
+                            value: z.string(),
+                            inline: z.boolean(),
+                        })
+                    ),
                 })
-            ),
-        })
-    ),
+                .describe("An embed object.")
+        )
+        .optional()
+        .describe("An array of embed objects to include in the message."),
 });
 
 interface LLMManagerOptions {
@@ -108,7 +132,20 @@ export class LLMManager {
         //     // response_format: messageStructure
         // });
 
-        const llm = this.client.withStructuredOutput(messageStructure);
+        // const llm = this.client.bindTools(tools);
+        // const llm = this.client.bindTools(tools);
+        // const llm = this.client;
+
+        const llm = this.client.bind({
+            tools,
+            // response_format: {
+            //     type: "json_schema",
+            //     json_schema: {
+            //         schema: messageStructure,
+            //         name: "responseSchema",
+            //     },
+            // },
+        });
 
         this.sessions.set(sessionId, {
             llm,
@@ -122,7 +159,8 @@ export class LLMManager {
     async generate(
         prompt: string,
         sessionId: string
-    ): Promise<z.infer<typeof messageStructure> | undefined> {
+    ): Promise<z.infer<typeof messageStructure> | AIMessageChunk | undefined> {
+        // ): Promise<AIMessageChunk | undefined> {
         const session = this.sessions.get(sessionId);
 
         if (!session) {
@@ -133,11 +171,20 @@ export class LLMManager {
 
         // keep invoking the model until we provide all tool call response and it produces a response
 
-        let resp: z.infer<typeof messageStructure> | undefined = undefined;
+        // let resp: z.infer<typeof messageStructure> | undefined = undefined;
+
+        let resp:
+            | AIMessageChunk
+            | z.infer<typeof messageStructure>
+            | undefined = undefined;
         let toolCalls = 0;
 
         while (toolCalls <= 5) {
+            // console.log("invoking model");
+
             const result = await session.llm.invoke(messages);
+
+            // console.log(result);
 
             messages.push(result);
 
@@ -152,8 +199,6 @@ export class LLMManager {
             if (result.tool_calls) {
                 for (const tool of result.tool_calls) {
                     const toolName = tool.name;
-
-                    // console.log(`Tool ${JSON.stringify(tool)}`   );
 
                     if (session.tools?.has(toolName)) {
                         const toolInstance = session.tools.get(toolName);
@@ -172,6 +217,8 @@ export class LLMManager {
 
             toolCalls++;
         }
+
+        console.log(`done after ${toolCalls} tool calls`);
 
         return resp;
     }

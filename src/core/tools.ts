@@ -4,8 +4,8 @@ import { z } from "zod";
 import type { GuildMember, User } from "discord.js";
 
 const getUserToolSchema = z.object({
-    userId: z.string().optional(),
-    username: z.string().optional(),
+    userId: z.string().optional().nullable(),
+    username: z.string().optional().nullable(),
 });
 
 export function createGetUserTool(client: DiscordAssistant, guildId?: string) {
@@ -133,32 +133,29 @@ export function createGetMessagesTool(
 ) {
     // get messages from a channel, by default it gets the last 10 messages, but you can specify the limit and filter
     return tool(
-        async ({ limit = 10, userId }) => {
+        async ({ n = 10 }) => {
             const channel = client.channels.cache.get(channelId);
 
             if (!channel || !channel.isTextBased()) {
                 return "Channel not found";
             }
 
-            const messages = await channel.messages.fetch({ limit });
+            const messages = await channel.messages.fetch({ limit: n });
 
-            if (userId) {
-                return JSON.stringify(
-                    messages.filter((msg) => msg.author.id === userId),
-                    null,
-                    2
-                );
-            }
+            // console.log(messages);
 
-            return JSON.stringify(messages, null, 2);
+            return JSON.stringify(
+                messages.map((message) => message.toJSON()),
+                null,
+                2
+            );
         },
         {
             name: "getMessages",
             description:
-                "Get messages from the current channel, the result is a JSON object of the messages, do not provide the JSON data to the user unless specified",
+                "Get N messages, defaults to 10, from the current channel, the result is a JSON object of the messages, do not provide the JSON data to the user unless specified",
             schema: z.object({
-                limit: z.number().optional(),
-                userId: z.string().optional(),
+                n: z.number().optional().default(10),
             }),
         }
     );
