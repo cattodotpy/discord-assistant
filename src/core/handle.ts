@@ -53,11 +53,34 @@ export async function handleMessage(
     if (!responseChunks)
         return await request.reply("I have hallucinated, please try again.");
 
-    const msgId = await request.reply({
-        content: responseChunks.content.toString().slice(0, 2000),
-        // embeds: responseChunks?.embeds?.map((embed) => {
-        //     return new EmbedBuilder(embed);
-        // }),
+    // const msgId = await request.reply({
+    //     content: responseChunks.content.toString().slice(0, 2000),
+    //     // embeds: responseChunks?.embeds?.map((embed) => {
+    //     //     return new EmbedBuilder(embed);
+    //     // }),
+    //     embeds: responseChunks.embeds
+    //         ? responseChunks?.embeds?.map((embed: any) => {
+    //               return new EmbedBuilder(embed);
+    //           })
+    //         : [],
+    // });
+    const messages = [] as { content: string; embeds: any }[];
+
+    // if the content exceeds 2000 characters, split it into multiple messages, and the embeds should be at the last message
+
+    let content = responseChunks.content.toString();
+
+    while (content.length > 2000) {
+        messages.push({
+            content: content.slice(0, 2000),
+            embeds: [],
+        });
+
+        content = content.slice(2000);
+    }
+
+    messages.push({
+        content,
         embeds: responseChunks.embeds
             ? responseChunks?.embeds?.map((embed: any) => {
                   return new EmbedBuilder(embed);
@@ -65,5 +88,16 @@ export async function handleMessage(
             : [],
     });
 
-    myMessages.push(msgId.id);
+    let lastMessage = request;
+
+    for (const message of messages) {
+        const msgId = await lastMessage.reply({
+            content: message.content,
+            embeds: message.embeds,
+        });
+
+        lastMessage = msgId;
+
+        myMessages.push(msgId.id);
+    }
 }

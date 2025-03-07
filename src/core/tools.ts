@@ -50,7 +50,7 @@ export function createGetUserTool(client: DiscordAssistant, guildId?: string) {
         {
             name: "getUser",
             description:
-                "Get a discord user by their ID or username, only one of them can exist, the result is a JSON object of the user, do not provide the JSON data to the user unless specified",
+                "Get a discord user by their ID or username, only one of them can exist, the result is a JSON object of the user.",
             schema: getUserToolSchema,
         }
     );
@@ -71,7 +71,7 @@ export function createGetRoleTool(client: DiscordAssistant, guildId: string) {
         {
             name: "getRole",
             description:
-                "Get a discord role by its ID, the result is a JSON object of the role, do not provide the JSON data to the user unless specified",
+                "Get a discord role by its ID, the result is a JSON object of the role",
             schema: z.object({
                 roleId: z.string(),
             }),
@@ -97,7 +97,7 @@ export function createGetChannelTool(
         {
             name: "getChannel",
             description:
-                "Get a discord channel by its ID, the result is a JSON object of the channel, do not provide the JSON data to the user unless specified",
+                "Get a discord channel by its ID, the result is a JSON object of the channel",
             schema: z.object({
                 channelId: z.string(),
             }),
@@ -119,7 +119,7 @@ export function createGetGuildTool(client: DiscordAssistant) {
         {
             name: "getGuild",
             description:
-                "Get a discord guild by its ID, the result is a JSON object of the guild, do not provide the JSON data to the user unless specified",
+                "Get a discord guild by its ID, the result is a JSON object of the guild",
             schema: z.object({
                 guildId: z.string(),
             }),
@@ -153,7 +153,7 @@ export function createGetMessagesTool(
         {
             name: "getMessages",
             description:
-                "Get N messages, defaults to 10, from the current channel, the result is a JSON object of the messages, do not provide the JSON data to the user unless specified",
+                "Get N messages, defaults to 10, from the current channel, the result is a JSON object of the messages",
             schema: z.object({
                 n: z.number().optional().default(10),
             }),
