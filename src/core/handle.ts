@@ -69,18 +69,38 @@ export async function handleMessage(
     // if the content exceeds 2000 characters, split it into multiple messages, and the embeds should be at the last message
 
     let content = responseChunks.content.toString();
+    let currentContent = "";
+    const lines = content.split("\n");
 
-    while (content.length > 2000) {
-        messages.push({
-            content: content.slice(0, 2000),
-            embeds: [],
-        });
+    // while (lines.length > 0) {
+    //     const lastLine = lines[lines.length - 1];
 
-        content = content.slice(2000);
+    //     if (lastLine.length + currentContent.length > 2000) {
+    //         messages.push({
+    //             content: currentContent,
+    //             embeds: [],
+    //         });
+    //         currentContent = "";
+    //     }
+
+    //     currentContent += lastLine + "\n";
+    //     lines.pop();
+    // }
+
+    for (const line of lines) {
+        if (line.length + currentContent.length > 2000) {
+            messages.push({
+                content: currentContent,
+                embeds: [],
+            });
+            currentContent = "";
+        }
+
+        currentContent += line + "\n";
     }
 
     messages.push({
-        content,
+        content: currentContent,
         embeds: responseChunks.embeds
             ? responseChunks?.embeds?.map((embed: any) => {
                   return new EmbedBuilder(embed);
@@ -88,16 +108,10 @@ export async function handleMessage(
             : [],
     });
 
-    let lastMessage = request;
-
     for (const message of messages) {
-        const msgId = await lastMessage.reply({
+        await request.channel.send({
             content: message.content,
             embeds: message.embeds,
         });
-
-        lastMessage = msgId;
-
-        myMessages.push(msgId.id);
     }
 }

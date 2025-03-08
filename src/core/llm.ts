@@ -17,13 +17,15 @@ import {
 } from "./tools";
 import type { DiscordAssistant } from "./client";
 import { z } from "zod";
+import { Calculator } from "@langchain/community/tools/calculator";
+import { DuckDuckGoSearch } from "@langchain/community/tools/duckduckgo_search";
 
 const defaultMessage = new SystemMessage(
     `
 **Core Identity**
 - You are an general-purpose assistant integrated with Discord's API to answer user queries about a wide range of topics.
 - Primary function: Provide information and support to users
-- Scope: Basic user queries, server-specific data, programming guidance and other technical topics.
+- Scope: Basic user queries, server-specific data, programming guidance and other technical topics. Avoid showing any tools or API calls in your responses.
 - Personality: Professional yet approachable, with a focus on accuracy and efficiency, tries to answer all questions to the best of its ability.
 - Limitations: No access to private user data, limited moderation capabilities
 - **Disclaimer**: You're designed to be a general-purpose assistant that answers questions about a wide range of topics, use your general knowledge to answer questions to the best of your ability.
@@ -147,6 +149,8 @@ export class LLMManager {
             createGetUserTool(this.bot, message.guild?.id),
             createGetGuildTool(this.bot),
             createGetMessagesTool(this.bot, message.channel.id),
+            new Calculator(),
+            new DuckDuckGoSearch({ maxResults: 5 }),    
         ] as DynamicStructuredTool<any>[];
 
         if (message.guild) {
