@@ -5,3 +5,5 @@ services:
       - DISCORD_TOKEN=${DISCORD_TOKEN}
       - LLM_API_KEY=${LLM_API_KEY}
       - LLM_BASE_URL=${LLM_BASE_URL}
+    pull_policy: always
+    restart: always
