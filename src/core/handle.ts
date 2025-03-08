@@ -1,5 +1,6 @@
 import { EmbedBuilder, ThreadChannel, type Message } from "discord.js";
 import type { DiscordAssistant } from "./client";
+import axios from "axios";
 
 let threads = [] as string[];
 
@@ -48,8 +49,28 @@ export async function handleMessage(
     const interval = createInterval();
 
     const sessionId = await client.llm.createSession(thread.id, request);
+
+    const attachments = request.attachments.map(async (attachment) => {
+        const resp = await axios.get(attachment.url, {
+            responseType: "arraybuffer",
+        });
+
+        const buffer = Buffer.from(resp.data, "binary");
+        return {
+            filename: attachment.name,
+            url: `data:${resp.headers["content-type"]};base64,${buffer.toString(
+                "base64"
+            )}`,
+        };
+    });
     const responseChunks = (await client.llm
-        .generate(message, sessionId)
+        .generate(
+            {
+                content: message,
+                attachments: await Promise.all(attachments),
+            },
+            sessionId
+        )
         .finally(() => {
             clearInterval(interval);
         })) as any;

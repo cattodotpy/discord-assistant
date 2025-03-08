@@ -24,7 +24,7 @@ export class DiscordAssistant extends Client {
             {
                 apiKey: this.env.LLM_API_KEY,
                 baseURL: this.env.LLM_BASE_URL,
-                model: "anthropic/claude-3.7-sonnet",
+                model: "anthropic/claude-3.5-haiku",
             },
             this
         );
