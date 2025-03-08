@@ -24,6 +24,7 @@ import {
     messagesStateReducer,
 } from "@langchain/langgraph";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
+import z from "zod";
 
 const defaultMessage = new SystemMessage(
     `
@@ -61,7 +62,7 @@ export class LLMManager {
             configuration: {
                 baseURL: options.baseURL,
             },
-            temperature: 0.4,
+            temperature: 0.7,
         });
         this.sessions = new Collection();
         this.bot = bot;
@@ -100,38 +101,35 @@ export class LLMManager {
             prompt: defaultMessage,
             llm: this.client,
             stateSchema: StateAnnotation,
-            // responseFormat: {
-            //     schema: z.object({
-            //         embeds: z
-            //             .array(
-            //                 z
-            //                     .object({
-            //                         title: z.string(),
-            //                         description: z.string().optional(),
-            //                         url: z.string().optional(),
-            //                         color: z.number().optional(),
-            //                         fields: z.array(
-            //                             z.object({
-            //                                 name: z.string(),
-            //                                 value: z.string(),
-            //                                 inline: z.boolean(),
-            //                             })
-            //                         ),
-            //                     })
-            //                     .describe("An embed object.")
-            //             )
-            //             .optional()
-            //             .describe(
-            //                 "An array of embed objects to include in the message."
-            //             )
-            //             .default([]),
-            //         content: z.string().optional().default(""),
-            //     }),
-            //     prompt: "You're able to respond to the user using text and/or embeds. However, '```' is not allowed in your response, instead use '\\' to separate code blocks, for example '\\`\\`\\`python'.",
-            // },
-            // responseFormat: z.object({
-            //     content: z.string().optional(),
-            // }),
+            responseFormat: {
+                schema: z.object({
+                    embeds: z
+                        .array(
+                            z
+                                .object({
+                                    title: z.string(),
+                                    description: z.string().optional(),
+                                    url: z.string().optional(),
+                                    color: z.number().optional(),
+                                    fields: z.array(
+                                        z.object({
+                                            name: z.string(),
+                                            value: z.string(),
+                                            inline: z.boolean(),
+                                        })
+                                    ),
+                                })
+                                .describe("An embed object.")
+                        )
+                        .optional()
+                        .describe(
+                            "An array of embed objects to include in the message."
+                        )
+                        .default([]),
+                    content: z.string().optional().default(""),
+                }),
+                prompt: "You're able to respond to the user using text and/or embeds. However, '```' is not allowed in your response, instead use '\\' to separate code blocks, for example '\\`\\`\\`python'.",
+            },
         });
         // const llm = this.client;
 
@@ -175,10 +173,20 @@ export class LLMManager {
             filename.endsWith(".png") || filename.endsWith(".jpg");
 
         const files = prompt.attachments.map((attachment) => {
+            if (isImage(attachment.filename)) {
+                return {
+                    type: "image_url",
+                    image_url: {
+                        url: attachment.url,
+                    },
+                };
+            }
+
             return {
-                type: "image_url",
-                image_url: {
+                type: "file",
+                file: {
                     url: attachment.url,
+                    filename: attachment.filename,
                 },
             };
         });
@@ -207,7 +215,7 @@ export class LLMManager {
         );
 
         const resp = finalState.messages[finalState.messages.length - 1];
-        console.log("Final state", finalState);
+        // console.log("Final state", finalState);
         return resp.structuredResponse || resp;
     }
 }
