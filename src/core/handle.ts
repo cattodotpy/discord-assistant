@@ -1,4 +1,9 @@
-import { EmbedBuilder, ThreadChannel, type Message } from "discord.js";
+import {
+    EmbedBuilder,
+    ThreadAutoArchiveDuration,
+    ThreadChannel,
+    type Message,
+} from "discord.js";
 import type { DiscordAssistant } from "./client";
 import axios from "axios";
 
@@ -33,7 +38,10 @@ export async function handleMessage(
         thread = request.channel;
         // console.log("thread");
     } else {
-        thread = await request.startThread({ name: "AI Response" });
+        thread = await request.startThread({
+            name: "AI Response",
+            autoArchiveDuration: ThreadAutoArchiveDuration.OneHour,
+        });
         threads.push(thread.id);
     }
 
