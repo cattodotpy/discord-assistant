@@ -1,60 +1,7 @@
 import { tool } from "@langchain/core/tools";
 import type { DiscordAssistant } from "./client";
 import { z } from "zod";
-import type { GuildMember, User } from "discord.js";
 
-const getUserToolSchema = z.object({
-    userId: z.string().optional().nullable(),
-    username: z.string().optional().nullable(),
-});
-
-export function createGetUserTool(client: DiscordAssistant, guildId?: string) {
-    return tool(
-        async ({ userId, username }) => {
-            console.log(`Using GetUserTool with ${userId} and ${guildId}`);
-            let result: User | GuildMember | undefined = undefined;
-
-            if (userId) {
-                if (guildId) {
-                    const guild = client.guilds.cache.get(guildId);
-                    result = guild?.members.cache.get(userId);
-                } else {
-                    result = await client.users.fetch(userId);
-                }
-            } else if (username) {
-                // result = await client.users.fetch(username);
-                if (guildId) {
-                    const guild = client.guilds.cache.get(guildId);
-                    result = guild?.members.cache.find(
-                        (member) => member.user.username === username
-                    );
-                } else {
-                    const user = client.users.cache.find(
-                        (user) => user.username === username
-                    );
-
-                    if (user) {
-                        result = user;
-                    }
-                }
-            }
-
-            // return a string
-
-            if (!result) {
-                return "User not found";
-            }
-
-            return JSON.stringify(result.toJSON(), null, 2);
-        },
-        {
-            name: "getUser",
-            description:
-                "Get a discord user by their ID or username, only one of them can exist, the result is a JSON object of the user.",
-            schema: getUserToolSchema,
-        }
-    );
-}
 
 export function createGetRoleTool(client: DiscordAssistant, guildId: string) {
     return tool(

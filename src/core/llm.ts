@@ -7,18 +7,20 @@ import {
 import type { Runnable } from "@langchain/core/runnables";
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { ChatOpenAI } from "@langchain/openai";
-import { Collection, Message } from "discord.js";
+import { Collection, EmbedBuilder, Message } from "discord.js";
 import {
     createGetChannelTool,
     createGetGuildTool,
     createGetMessagesTool,
     createGetRoleTool,
-    createGetUserTool,
 } from "./tools";
 import type { DiscordAssistant } from "./client";
 import { z } from "zod";
 import { Calculator } from "@langchain/community/tools/calculator";
 import { DuckDuckGoSearch } from "@langchain/community/tools/duckduckgo_search";
+import { WikipediaQueryRun } from "@langchain/community/tools/wikipedia_query_run";
+import GetUserTool from "../tools/getUser";
+import addEmbedsTool from "../tools/createEmbed";
 
 const defaultMessage = new SystemMessage(
     `
@@ -129,6 +131,7 @@ export class LLMManager {
             configuration: {
                 baseURL: options.baseURL,
             },
+            temperature: 0.2,
         });
         this.sessions = new Collection();
         this.bot = bot;
@@ -146,11 +149,14 @@ export class LLMManager {
         }
 
         const tools = [
-            createGetUserTool(this.bot, message.guild?.id),
+            // createGetUserTool(this.bot, message.guild?.id),
+            new GetUserTool(this.bot, message.guild?.id),
             createGetGuildTool(this.bot),
             createGetMessagesTool(this.bot, message.channel.id),
             new Calculator(),
-            new DuckDuckGoSearch({ maxResults: 5 }),
+            new DuckDuckGoSearch({ maxResults: 10 }),
+            new WikipediaQueryRun(),
+            new addEmbedsTool(),
         ] as DynamicStructuredTool<any>[];
 
         if (message.guild) {
@@ -181,7 +187,13 @@ export class LLMManager {
     async generate(
         prompt: string,
         sessionId: string
-    ): Promise<z.infer<typeof messageStructure> | AIMessageChunk | undefined> {
+    ): Promise<
+        | {
+              content?: string;
+              embeds: EmbedBuilder[];
+          }
+        | undefined
+    > {
         // ): Promise<AIMessageChunk | undefined> {
         const session = this.sessions.get(sessionId);
 
@@ -200,8 +212,9 @@ export class LLMManager {
             | z.infer<typeof messageStructure>
             | undefined = undefined;
         let toolCalls = 0;
+        const embeds = [] as EmbedBuilder[];
 
-        while (toolCalls <= 5) {
+        while (true) {
             // console.log("invoking model");
 
             const result = await session.llm.invoke(messages);
@@ -231,6 +244,30 @@ export class LLMManager {
                                 tool
                             );
 
+                            // console.log(toolResponse);
+
+                            // if (toolResponse.embeds) {
+                            //     console.log("adding embeds");
+                            //     embeds.push(...toolResponse.embeds);
+                            // }
+
+                            // messages.push(
+                            //     toolResponse.response
+                            //         ? toolResponse.response
+                            //         : toolResponse
+                            // );
+
+                            if (toolName === "addEmbeds") {
+                                const embedsData = JSON.parse(
+                                    toolResponse.content
+                                );
+                                embeds.push(
+                                    ...embedsData.embeds.map(
+                                        (embed: any) => new EmbedBuilder(embed)
+                                    )
+                                );
+                            }
+
                             messages.push(toolResponse);
                         }
                     }
@@ -242,6 +279,9 @@ export class LLMManager {
 
         console.log(`done after ${toolCalls} tool calls`);
 
-        return resp;
+        return {
+            content: resp?.content.toString(),
+            embeds,
+        };
     }
 }

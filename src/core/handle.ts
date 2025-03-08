@@ -1,39 +1,43 @@
-import { EmbedBuilder, type Message } from "discord.js";
+import { EmbedBuilder, ThreadChannel, type Message } from "discord.js";
 import type { DiscordAssistant } from "./client";
 
-let myMessages = [] as string[];
+let threads = [] as string[];
 
 export async function handleMessage(
     request: Message,
     client: DiscordAssistant
 ) {
-    // check if the message author is a bot
     if (request.author.bot) return;
+
     if (
-        !request.content.startsWith(client.user?.toString()!) ||
-        (request.reference?.messageId &&
-            !myMessages.includes(request.reference?.messageId))
+        !request.content.startsWith(client.user!.toString()) &&
+        !(request.channel.isThread() && threads.includes(request.channelId))
     )
         return;
-    if (!request.channel.isSendable()) return;
+    let message = request.content;
 
-    const message = request.content
-        .slice(client.user!.toString().length)
-        .trim();
+    if (message.startsWith(`<@!${client.user!.id}>`)) {
+        message = message.slice(`<@!${client.user!.id}>`.length).trim();
+    } else if (message.startsWith(`<@${client.user!.id}>`)) {
+        message = message.slice(`<@${client.user!.id}>`.length).trim();
+    }
 
     if (!message) return;
 
-    // await request.channel.sendTyping()
-    // repeat after 10 seconds
+    let thread: ThreadChannel;
 
-    // const interval = setInterval(async () => {
-    //     if (!request.channel.isSendable()) return;
-    //     await request.channel.sendTyping();
-    // }, 10000);
+    // console.log(request.channel.isThread());
+
+    if (request.channel.isThread()) {
+        thread = request.channel;
+        // console.log("thread");
+    } else {
+        thread = await request.startThread({ name: "AI Response" });
+        threads.push(thread.id);
+    }
 
     const typingFunc = async () => {
-        if (!request.channel.isSendable()) return;
-        await request.channel.sendTyping();
+        await thread.sendTyping();
     };
 
     const createInterval = () => {
@@ -109,9 +113,10 @@ export async function handleMessage(
     });
 
     for (const message of messages) {
-        await request.channel.send({
+        await thread.send({
             content: message.content,
             embeds: message.embeds,
+            allowedMentions: { roles: [], users: [] },
         });
     }
 }
