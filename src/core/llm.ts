@@ -91,16 +91,10 @@ interface LLMManagerOptions {
     model: string;
 }
 
-interface LLMSession {
-    llm: CompiledStateGraph<any, any>;
-    messages: (HumanMessage | AIMessage)[];
-    tools?: Map<string, DynamicStructuredTool>;
-}
-
 export class LLMManager {
     private client: ChatOpenAI;
     private bot: DiscordAssistant;
-    public sessions: Collection<string, LLMSession>;
+    public sessions: Collection<string, CompiledStateGraph<any, any>>;
 
     constructor(options: LLMManagerOptions, bot: DiscordAssistant) {
         this.client = new ChatOpenAI({
@@ -157,11 +151,7 @@ export class LLMManager {
 
         // const llm = this.client.withStructuredOutput(messageStructure);
 
-        this.sessions.set(sessionId, {
-            llm,
-            messages: [defaultMessage],
-            tools: new Map(tools.map((tool) => [tool.name, tool])),
-        });
+        this.sessions.set(sessionId, llm);
 
         return sessionId;
     }
@@ -191,7 +181,7 @@ export class LLMManager {
 
         const embeds = [] as EmbedBuilder[];
 
-        const finalState = await session.llm.invoke(
+        const finalState = await session.invoke(
             { messages },
             { configurable: { thread_id: sessionId } }
         );
