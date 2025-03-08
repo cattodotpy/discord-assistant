@@ -47,7 +47,7 @@ export async function handleMessage(
 
     const interval = createInterval();
 
-    const sessionId = await client.llm.createSession(request);
+    const sessionId = await client.llm.createSession(thread.id, request);
     const responseChunks = (await client.llm
         .generate(message, sessionId)
         .finally(() => {

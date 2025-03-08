@@ -21,6 +21,8 @@ import { DuckDuckGoSearch } from "@langchain/community/tools/duckduckgo_search";
 import { WikipediaQueryRun } from "@langchain/community/tools/wikipedia_query_run";
 import GetUserTool from "../tools/getUser";
 import addEmbedsTool from "../tools/createEmbed";
+import { CompiledStateGraph, MemorySaver } from "@langchain/langgraph";
+import { createReactAgent } from "@langchain/langgraph/prebuilt";
 
 const defaultMessage = new SystemMessage(
     `
@@ -83,30 +85,6 @@ const defaultMessage = new SystemMessage(
 `
 );
 
-const messageStructure = z.object({
-    content: z.string().describe("The content of the Discord message."),
-    embeds: z
-        .array(
-            z
-                .object({
-                    title: z.string(),
-                    description: z.string().optional(),
-                    url: z.string().optional(),
-                    color: z.number().optional(),
-                    fields: z.array(
-                        z.object({
-                            name: z.string(),
-                            value: z.string(),
-                            inline: z.boolean(),
-                        })
-                    ),
-                })
-                .describe("An embed object.")
-        )
-        .optional()
-        .describe("An array of embed objects to include in the message."),
-});
-
 interface LLMManagerOptions {
     apiKey: string;
     baseURL: string;
@@ -114,7 +92,7 @@ interface LLMManagerOptions {
 }
 
 interface LLMSession {
-    llm: Runnable<any>;
+    llm: CompiledStateGraph<any, any>;
     messages: (HumanMessage | AIMessage)[];
     tools?: Map<string, DynamicStructuredTool>;
 }
@@ -141,8 +119,8 @@ export class LLMManager {
 
     private async initialize() {}
 
-    async createSession(message: Message): Promise<string> {
-        const sessionId = `${message.author.id}-${message.channel.id}`;
+    async createSession(sessionId: string, message: Message): Promise<string> {
+        // const sessionId = message.channel.id;
 
         if (this.sessions.has(sessionId)) {
             return sessionId;
@@ -170,7 +148,11 @@ export class LLMManager {
         // });
 
         // const llm = this.client.bindTools(tools);
-        const llm = this.client.bindTools(tools);
+        const llm = createReactAgent({
+            checkpointSaver: new MemorySaver(),
+            tools,
+            llm: this.client,
+        });
         // const llm = this.client;
 
         // const llm = this.client.withStructuredOutput(messageStructure);
@@ -207,77 +189,14 @@ export class LLMManager {
 
         // let resp: z.infer<typeof messageStructure> | undefined = undefined;
 
-        let resp:
-            | AIMessageChunk
-            | z.infer<typeof messageStructure>
-            | undefined = undefined;
-        let toolCalls = 0;
         const embeds = [] as EmbedBuilder[];
 
-        while (true) {
-            // console.log("invoking model");
+        const finalState = await session.llm.invoke(
+            { messages },
+            { configurable: { thread_id: sessionId } }
+        );
 
-            const result = await session.llm.invoke(messages);
-
-            // console.log(result);
-
-            messages.push(result);
-
-            if (
-                result.content &&
-                (!result.tool_calls || result.tool_calls?.length === 0)
-            ) {
-                resp = result;
-                break;
-            }
-
-            if (result.tool_calls) {
-                for (const tool of result.tool_calls) {
-                    const toolName = tool.name;
-
-                    if (session.tools?.has(toolName)) {
-                        const toolInstance = session.tools.get(toolName);
-
-                        if (toolInstance) {
-                            console.log(`Invoking tool ${toolName}`);
-                            const toolResponse = await toolInstance.invoke(
-                                tool
-                            );
-
-                            // console.log(toolResponse);
-
-                            // if (toolResponse.embeds) {
-                            //     console.log("adding embeds");
-                            //     embeds.push(...toolResponse.embeds);
-                            // }
-
-                            // messages.push(
-                            //     toolResponse.response
-                            //         ? toolResponse.response
-                            //         : toolResponse
-                            // );
-
-                            if (toolName === "addEmbeds") {
-                                const embedsData = JSON.parse(
-                                    toolResponse.content
-                                );
-                                embeds.push(
-                                    ...embedsData.embeds.map(
-                                        (embed: any) => new EmbedBuilder(embed)
-                                    )
-                                );
-                            }
-
-                            messages.push(toolResponse);
-                        }
-                    }
-                }
-            }
-
-            toolCalls++;
-        }
-
-        console.log(`done after ${toolCalls} tool calls`);
+        const resp = finalState.messages[finalState.messages.length - 1];
 
         return {
             content: resp?.content.toString(),
