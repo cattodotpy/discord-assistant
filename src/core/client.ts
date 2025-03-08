@@ -24,7 +24,7 @@ export class DiscordAssistant extends Client {
             {
                 apiKey: this.env.LLM_API_KEY,
                 baseURL: this.env.LLM_BASE_URL,
-                model: "anthropic/claude-3.5-haiku",
+                model: "google/gemini-2.0-flash-001",
             },
             this
         );
