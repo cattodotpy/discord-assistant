@@ -150,7 +150,7 @@ export class LLMManager {
             createGetGuildTool(this.bot),
             createGetMessagesTool(this.bot, message.channel.id),
             new Calculator(),
-            new DuckDuckGoSearch({ maxResults: 5 }),    
+            new DuckDuckGoSearch({ maxResults: 5 }),
         ] as DynamicStructuredTool<any>[];
 
         if (message.guild) {
