@@ -111,7 +111,7 @@ export class LLMManager {
             configuration: {
                 baseURL: options.baseURL,
             },
-            temperature: 0.7,
+            temperature: 0.9,
         });
         this.sessions = new Collection();
         this.bot = bot;
@@ -172,6 +172,7 @@ export class LLMManager {
             prompt: defaultMessage,
             llm: this.client,
             stateSchema: StateAnnotation,
+            // responseFormat: schema,
 
             // responseType
         });
@@ -258,7 +259,7 @@ export class LLMManager {
             { configurable: { thread_id: sessionId } }
         );
 
-        console.log(JSON.stringify(finalState, null, 2));
+        // console.log(JSON.stringify(finalState, null, 2));
 
         return finalState.messages[finalState.messages.length - 1];
     }
