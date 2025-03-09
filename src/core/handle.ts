@@ -6,9 +6,7 @@ import {
 } from "discord.js";
 import type { DiscordAssistant } from "./client";
 import axios from "axios";
-import User from "../schema/user";
-
-let threads = [] as string[];
+import User from "../schema/User";
 
 async function getUser(discordId: string) {
     const user = await User.findOne({ discordId });
