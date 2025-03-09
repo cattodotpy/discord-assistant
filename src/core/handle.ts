@@ -23,6 +23,9 @@ export async function handleMessage(
     client: DiscordAssistant
 ) {
     if (request.author.bot) return;
+    if (request.content.startsWith(client.commands.prefix)) {
+        return await client.commands.handleMessage(request);
+    }
     const user = await getUser(request.author.id);
     if (
         !request.content.startsWith(client.user!.toString()) &&
@@ -92,12 +95,16 @@ export async function handleMessage(
             },
             sessionId
         )
+        .catch((e) => {
+            console.error(e);
+            return undefined;
+        })
         .finally(() => {
             clearInterval(interval);
         })) as any;
 
     if (!responseChunks)
-        return await request.reply("I have hallucinated, please try again.");
+        return await request.reply("An error occurred while processing your request.");
 
     // const msgId = await request.reply({
     //     content: responseChunks.content.toString().slice(0, 2000),

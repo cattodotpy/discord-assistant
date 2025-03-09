@@ -4,6 +4,8 @@ import z from "zod";
 import { handleMessage } from "./handle";
 import { LLMManager } from "./llm";
 import mongoose from "mongoose";
+import { type Command, CommandManager } from "./command";
+import PingCommand from "../commands/ping";
 
 const envSchema = z.object({
     DISCORD_TOKEN: z.string(),
@@ -14,10 +16,14 @@ const envSchema = z.object({
 
 type Env = z.infer<typeof envSchema>;
 
+const commands = [new PingCommand()] as Command[];
+
 export class DiscordAssistant extends Client {
     private env: Env;
     private startTimestamp: number;
     public llm: LLMManager;
+    public commands: CommandManager;
+
     constructor(options: ClientOptions) {
         super(options);
         this.env = envSchema.parse(Bun.env);
@@ -30,6 +36,11 @@ export class DiscordAssistant extends Client {
             },
             this
         );
+        this.commands = new CommandManager("$", this);
+
+        for (const command of commands) {
+            this.commands.register(command);
+        }
 
         this.initialize().catch(console.error);
     }
