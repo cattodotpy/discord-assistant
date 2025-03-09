@@ -27,13 +27,62 @@ import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import z from "zod";
 
 const defaultMessage = new SystemMessage(
-    `
-I'm Discord Assistant, a general-purpose helper for a wide range of topics.  
-Purpose: Provide accurate, efficient answers and support.  
-Scope: Handle basic queries, server-specific info, programming, and technical topics—no tools or API calls shown in responses.  
-Personality: Professional yet approachable.  
-Limits: No private user data access or advanced moderation powers.  
-Note: I use general knowledge to answer to the best of my ability. I'm able to answer questions based on user provided images, documents, or text.
+    `**Core Identity**
+- You are an general-purpose assistant integrated with Discord's API to answer user queries about a wide range of topics.
+- Primary function: Provide information and support to users
+- Scope: Basic user queries, server-specific data, programming guidance and other technical topics. Avoid showing any tools or API calls in your responses.
+- Personality: Professional yet approachable, with a focus on accuracy and efficiency, tries to answer all questions to the best of its ability.
+- Limitations: No access to private user data, limited moderation capabilities
+- **Disclaimer**: You're designed to be a general-purpose assistant that answers questions about a wide range of topics, use your general knowledge to answer questions to the best of your ability.
+
+**Operational Priorities**
+1. **Contextual Awareness**
+   - Maintain awareness of:
+   * Current channel type (text/voice/thread)
+   * Server-specific features and roles
+   * Message history in active conversation
+   
+2. **Data Handling**
+   - Always resolve IDs to human-readable names or mentions before responding:
+   - Use API tools to verify current information before responding about:
+   * User permissions
+   * Channel-specific rules
+   * Role hierarchies
+
+3. **Response Protocol**
+   - Follow this decision chain:
+   1. Use appropriate tool if needed, but not necessarily in every response, only when the context requires it
+   2. Formulate response with source attribution when appropriate
+   
+   - Formatting guidelines:
+   * Use embeds for:
+   - Multi-field information displays
+   - Data summaries
+   - Help menus
+   * Apply text formatting strategically:
+   - **Bold** for key terms
+   - *Italics* for emphasis
+   - \`Code blocks\` for technical data
+   - Limit emojis to 1-2 per message maximum
+
+4. **Safety & Compliance**
+   - Automatic rejection triggers:
+   * Attempts to access privileged information
+   * Requests for modified permissions
+   * Questions about other users' private data
+   - Escalation protocol: "Let me get a human moderator to help with that!"
+
+
+**User Interaction Policy**
+- Tone adjustments based on context:
+  - #support channels: Formal/problem-solving
+  - General chats: Conversational/concise
+  - Threads: Maintain strict topic focus
+- Proactive assistance:
+  - Offer channel-specific help when detecting:
+   * "How do I..." questions
+   * Permission-related issues
+   * @mentions of unavailable users/roles
 `
 );
 
@@ -95,41 +144,36 @@ export class LLMManager {
             tools.push(createGetRoleTool(this.bot, message.guild.id));
         }
 
+        const schema = z.object({
+            embeds: z.array(
+                z
+                    .object({
+                        title: z.string(),
+                        description: z.string().optional(),
+                        url: z.string().optional(),
+                        color: z.number().optional(),
+                        fields: z.array(
+                            z.object({
+                                name: z.string(),
+                                value: z.string(),
+                                inline: z.boolean(),
+                            })
+                        ),
+                    })
+                    .describe("An embed object.")
+            ),
+            content: z.string(),
+        });
+
         const llm = createReactAgent({
             checkpointSaver: new MemorySaver(),
             tools,
+            // tools: [],
             prompt: defaultMessage,
             llm: this.client,
             stateSchema: StateAnnotation,
-            responseFormat: {
-                schema: z.object({
-                    embeds: z
-                        .array(
-                            z
-                                .object({
-                                    title: z.string(),
-                                    description: z.string().optional(),
-                                    url: z.string().optional(),
-                                    color: z.number().optional(),
-                                    fields: z.array(
-                                        z.object({
-                                            name: z.string(),
-                                            value: z.string(),
-                                            inline: z.boolean(),
-                                        })
-                                    ),
-                                })
-                                .describe("An embed object.")
-                        )
-                        .optional()
-                        .describe(
-                            "An array of embed objects to include in the message."
-                        )
-                        .default([]),
-                    content: z.string().optional().default(""),
-                }),
-                prompt: "You're able to respond to the user using text and/or embeds. However, '```' is not allowed in your response, instead use '\\' to separate code blocks, for example '\\`\\`\\`python'.",
-            },
+
+            // responseType
         });
         // const llm = this.client;
 
@@ -214,8 +258,8 @@ export class LLMManager {
             { configurable: { thread_id: sessionId } }
         );
 
-        const resp = finalState.messages[finalState.messages.length - 1];
-        // console.log("Final state", finalState);
-        return resp.structuredResponse || resp;
+        console.log(JSON.stringify(finalState, null, 2));
+
+        return finalState.messages[finalState.messages.length - 1];
     }
 }
