@@ -6,18 +6,32 @@ import {
 } from "discord.js";
 import type { DiscordAssistant } from "./client";
 import axios from "axios";
+import User from "../schema/user";
 
 let threads = [] as string[];
+
+async function getUser(discordId: string) {
+    const user = await User.findOne({ discordId });
+
+    if (!user) {
+        return await User.create({ discordId });
+    }
+
+    return user;
+}
 
 export async function handleMessage(
     request: Message,
     client: DiscordAssistant
 ) {
     if (request.author.bot) return;
-
+    const user = await getUser(request.author.id);
     if (
         !request.content.startsWith(client.user!.toString()) &&
-        !(request.channel.isThread() && threads.includes(request.channelId))
+        !(
+            request.channel.isThread() &&
+            user.threads.includes(request.channel.id)
+        )
     )
         return;
     let message = request.content;
@@ -36,13 +50,14 @@ export async function handleMessage(
 
     if (request.channel.isThread()) {
         thread = request.channel;
-        // console.log("thread");
     } else {
         thread = await request.startThread({
             name: "AI Response",
             autoArchiveDuration: ThreadAutoArchiveDuration.OneHour,
         });
-        threads.push(thread.id);
+
+        user.threads.push(thread.id);
+        await user.save();
     }
 
     const typingFunc = async () => {

@@ -25,6 +25,8 @@ import {
 } from "@langchain/langgraph";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import z from "zod";
+import { MongoDBSaver } from "./checkpointer";
+import mongoose from "mongoose";
 
 const defaultMessage = new SystemMessage(
     `**Core Identity**
@@ -165,8 +167,13 @@ export class LLMManager {
             content: z.string(),
         });
 
+        if (!mongoose.connection.db) return sessionId;
+
         const llm = createReactAgent({
-            checkpointSaver: new MemorySaver(),
+            checkpointSaver: new MongoDBSaver({
+                db: mongoose.connection.db,
+                checkpointCollectionName: "llm_checkpoints",
+            }),
             tools,
             // tools: [],
             prompt: defaultMessage,

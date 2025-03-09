@@ -3,11 +3,13 @@ import { Client, type ClientOptions } from "discord.js";
 import z from "zod";
 import { handleMessage } from "./handle";
 import { LLMManager } from "./llm";
+import mongoose from "mongoose";
 
 const envSchema = z.object({
     DISCORD_TOKEN: z.string(),
     LLM_API_KEY: z.string(),
     LLM_BASE_URL: z.string(),
+    MONGODB_URI: z.string(),
 });
 
 type Env = z.infer<typeof envSchema>;
@@ -53,6 +55,15 @@ export class DiscordAssistant extends Client {
         this.on("messageCreate", async (message) => {
             return await handleMessage(message, this);
         });
+
+        mongoose.connect(this.env.MONGODB_URI).then(
+            () => {
+                console.log("Connected to MongoDB");
+            },
+            (err) => {
+                console.error(err);
+            }
+        );
     }
 
     public async stop() {

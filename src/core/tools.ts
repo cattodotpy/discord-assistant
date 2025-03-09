@@ -2,7 +2,6 @@ import { tool } from "@langchain/core/tools";
 import type { DiscordAssistant } from "./client";
 import { z } from "zod";
 
-
 export function createGetRoleTool(client: DiscordAssistant, guildId: string) {
     return tool(
         async ({ roleId }) => {
