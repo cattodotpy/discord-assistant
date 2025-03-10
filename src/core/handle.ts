@@ -118,7 +118,7 @@ export async function handleMessage(
         }
     }
 
-    console.log("Message content: ", messageContent);
+    // console.log("Message content: ", messageContent);
     const responseChunks = (await client.llm
         .generate(
             {
