@@ -11,6 +11,7 @@ import {
     createGetGuildTool,
     createGetMessagesTool,
     createGetRoleTool,
+    getTimeTool,
 } from "./tools";
 import type { DiscordAssistant } from "./client";
 import { Calculator } from "@langchain/community/tools/calculator";
@@ -27,8 +28,7 @@ import z from "zod";
 import { MongoDBSaver } from "./checkpointer";
 import mongoose from "mongoose";
 
-const defaultMessage = new SystemMessage(
-    `**Core Identity**
+const defaultMessage = `**Core Identity**
 - You are an general-purpose assistant integrated with Discord's API to answer user queries about a wide range of topics.
 - Primary function: Provide information and support to users
 - Scope: Basic user queries, server-specific data, programming guidance and other technical topics. Avoid showing any tools or API calls in your responses.
@@ -84,8 +84,12 @@ const defaultMessage = new SystemMessage(
    * "How do I..." questions
    * Permission-related issues
    * @mentions of unavailable users/roles
-`
-);
+
+# Context
+- **Server**: {{guild}}
+- **Channel**: {{channel}}
+- **User**: {{author}}
+`;
 
 interface LLMManagerOptions {
     apiKey: string;
@@ -137,6 +141,7 @@ export class LLMManager {
             new Calculator(),
             new DuckDuckGoSearch({ maxResults: 10 }),
             new WikipediaQueryRun(),
+            getTimeTool,
             // addEmbedsTool,
         ] as DynamicStructuredTool<any>[];
 
@@ -168,6 +173,22 @@ export class LLMManager {
 
         if (!mongoose.connection.db) return sessionId;
 
+        const systemPrompt = defaultMessage
+            .replace(
+                "{{guild}}",
+                `${message.guild?.name} (${message.guild?.id})`
+            )
+            .replace(
+                "{{channel}}",
+                `${!message.channel.isDMBased() && message.channel.name} (${
+                    message.channel.id
+                })`
+            )
+            .replace(
+                "{{author}}",
+                `${message.author.username} (${message.author.id})`
+            );
+
         const llm = createReactAgent({
             checkpointSaver: new MongoDBSaver({
                 db: mongoose.connection.db,
@@ -175,7 +196,7 @@ export class LLMManager {
             }),
             tools,
             // tools: [],
-            prompt: defaultMessage,
+            prompt: new SystemMessage(systemPrompt),
             llm: this.client,
             stateSchema: StateAnnotation,
             // responseFormat: schema,

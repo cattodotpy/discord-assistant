@@ -12,6 +12,7 @@ const envSchema = z.object({
     LLM_API_KEY: z.string(),
     LLM_BASE_URL: z.string(),
     MONGODB_URI: z.string(),
+    COMMAND_PREFIX: z.string().default("$"),
 });
 
 type Env = z.infer<typeof envSchema>;
@@ -36,7 +37,7 @@ export class DiscordAssistant extends Client {
             },
             this
         );
-        this.commands = new CommandManager("$", this);
+        this.commands = new CommandManager(this.env.COMMAND_PREFIX, this);
 
         for (const command of commands) {
             this.commands.register(command);

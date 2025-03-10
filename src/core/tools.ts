@@ -12,7 +12,7 @@ export function createGetRoleTool(client: DiscordAssistant, guildId: string) {
                 return "Role not found";
             }
 
-            return JSON.stringify(role.toJSON(), null, 2);
+            return JSON.stringify(role.toJSON());
         },
         {
             name: "getRole",
@@ -38,7 +38,7 @@ export function createGetChannelTool(
                 return "Channel not found";
             }
 
-            return JSON.stringify(channel.toJSON(), null, 2);
+            return JSON.stringify(channel.toJSON());
         },
         {
             name: "getChannel",
@@ -60,7 +60,7 @@ export function createGetGuildTool(client: DiscordAssistant) {
                 return "Guild not found";
             }
 
-            return JSON.stringify(guild.toJSON(), null, 2);
+            return JSON.stringify(guild.toJSON());
         },
         {
             name: "getGuild",
@@ -90,11 +90,7 @@ export function createGetMessagesTool(
 
             // console.log(messages);
 
-            return JSON.stringify(
-                messages.map((message) => message.toJSON()),
-                null,
-                2
-            );
+            return JSON.stringify(messages.map((message) => message.toJSON()));
         },
         {
             name: "getMessages",
@@ -106,3 +102,27 @@ export function createGetMessagesTool(
         }
     );
 }
+
+export const getTimeTool = tool(
+    async (
+        { timeZone }: { timeZone?: string } = { timeZone: "America/Chicago" }
+    ) => {
+        return new Date().toLocaleDateString("en-US", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+            hour: "numeric",
+            minute: "numeric",
+            second: "numeric",
+            timeZone: timeZone,
+        });
+    },
+    {
+        name: "getTime",
+        description:
+            "Get the current time in ISO format with timezone, defaults to America/Chicago",
+        schema: z.object({
+            timeZone: z.string().optional().default("America/Chicago"),
+        }),
+    }
+);

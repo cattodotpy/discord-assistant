@@ -87,10 +87,42 @@ export async function handleMessage(
             )}`,
         };
     });
+
+    let messageContent = message;
+
+    if (request.reference && request.reference.messageId) {
+        const referencedMessage = await request.channel.messages.fetch(
+            request.reference.messageId
+        );
+
+        messageContent += `\n\nReferenced message: ${referencedMessage.content}, with ${referencedMessage.attachments.size} attachments`;
+
+        if (referencedMessage.attachments.size > 0) {
+            const referenceAttachments = referencedMessage.attachments.map(
+                async (attachment) => {
+                    const resp = await axios.get(attachment.url, {
+                        responseType: "arraybuffer",
+                    });
+
+                    const buffer = Buffer.from(resp.data, "binary");
+                    return {
+                        filename: attachment.name,
+                        url: `data:${
+                            resp.headers["content-type"]
+                        };base64,${buffer.toString("base64")}`,
+                    };
+                }
+            );
+
+            attachments.push(...referenceAttachments);
+        }
+    }
+
+    console.log("Message content: ", messageContent);
     const responseChunks = (await client.llm
         .generate(
             {
-                content: message,
+                content: messageContent,
                 attachments: await Promise.all(attachments),
             },
             sessionId
@@ -104,7 +136,9 @@ export async function handleMessage(
         })) as any;
 
     if (!responseChunks)
-        return await request.reply("An error occurred while processing your request.");
+        return await request.reply(
+            "An error occurred while processing your request."
+        );
 
     // const msgId = await request.reply({
     //     content: responseChunks.content.toString().slice(0, 2000),
