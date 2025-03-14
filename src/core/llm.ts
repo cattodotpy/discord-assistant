@@ -94,7 +94,7 @@ export class LLMManager {
             configuration: {
                 baseURL: options.baseURL,
             },
-            temperature: 0.9,
+            temperature: 0.5,
         });
         this.sessions = new Collection();
         this.bot = bot;

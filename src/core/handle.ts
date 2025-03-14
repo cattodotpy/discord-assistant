@@ -43,7 +43,7 @@ export async function handleMessage(
         message = message.slice(`<@${client.user!.id}>`.length).trim();
     }
 
-    if (!message) return;
+    // if (!message) return;
 
     let thread: ThreadChannel;
 
