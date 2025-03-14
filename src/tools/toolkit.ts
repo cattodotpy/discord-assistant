@@ -100,13 +100,13 @@ export class DiscordToolkit extends BaseToolkit {
         async ({ embeds }, config: LangGraphRunnableConfig) => {
             // config.configurable?.addEmbeds(embeds);
             embeds.forEach((embed) => {
-                config.configurable?.addEmbed(new EmbedBuilder(embed));
+                config.configurable?.addEmbed(new EmbedBuilder(embed as any));
             });
             return "Embeds added";
         },
         {
-            name: "includeEmbeds",
-            description: "Include discord embeds in the response",
+            name: "addEmbeds",
+            description: "Add discord embeds in the response",
             schema: z.object({
                 embeds: z.array(
                     z
@@ -126,14 +126,22 @@ export class DiscordToolkit extends BaseToolkit {
                                 .object({
                                     url: z.string(),
                                 })
-                                .optional(),
+                                .optional()
+                                .nullable()
+                                .describe(
+                                    "An image object, either null or an object with a url."
+                                ),
                             thumbnail: z
                                 .object({
                                     url: z.string(),
                                 })
-                                .optional(),
+                                .optional()
+                                .nullable()
+                                .describe(
+                                    "A thumbnail object, either null or an object with a url."
+                                ),
                         })
-                        .strict()
+                        .describe("An embed object.")
                 ),
             }),
         }
