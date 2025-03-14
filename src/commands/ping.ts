@@ -3,11 +3,17 @@ import type { IContext } from "@/context";
 
 export default class PingCommand implements Command {
     name = "ping";
-    aliases = ["p"];
+    aliases = [];
+    description = "Returns latency and API ping.";
 
-    description = "Ping the bot";
+    async execute(ctx: IContext): Promise<void> {
+        const latency = Date.now() - ((ctx.message || ctx.interaction)?.createdTimestamp as number);
+        const websocketPing = ctx.bot.ws.ping;
+        const memoryUsage = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2);
+        const cpuUsage = (process.cpuUsage().user / 1000).toFixed(2);
 
-    async execute(context: IContext): Promise<void> {
-        await context.reply("Pong!");
+        await ctx.reply({
+            content: `🏓 Pong!\n\n**Latency**: ${latency}ms\n**Websocket Ping**: ${websocketPing}ms\n**Memory Usage**: ${memoryUsage}MB\n**CPU Usage**: ${cpuUsage}%`
+        });
     }
 }

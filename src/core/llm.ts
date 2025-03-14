@@ -6,18 +6,13 @@ import {
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { ChatOpenAI } from "@langchain/openai";
 import { Collection, EmbedBuilder, Message } from "discord.js";
-import {
-    createGetChannelTool,
-    createGetGuildTool,
-    createGetMessagesTool,
-    createGetRoleTool,
-    getTimeTool,
-} from "./tools";
+import { getTimeTool } from "./tools";
 import type { DiscordAssistant } from "./client";
 import { Calculator } from "@langchain/community/tools/calculator";
 import { DuckDuckGoSearch } from "@langchain/community/tools/duckduckgo_search";
 import { WikipediaQueryRun } from "@langchain/community/tools/wikipedia_query_run";
 import GetUserTool from "../tools/getUser";
+import translate from "../tools/translate";
 import {
     Annotation,
     CompiledStateGraph,
@@ -27,6 +22,8 @@ import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import z from "zod";
 import { MongoDBSaver } from "./checkpointer";
 import mongoose from "mongoose";
+import { DiscordToolkit } from "../tools/toolkit";
+import createCallCommnandTool from "../tools/callCommand";
 
 const defaultMessage = `**Core Identity**
 - You are an general-purpose assistant integrated with Discord's API to answer user queries about a wide range of topics.
@@ -65,6 +62,7 @@ const defaultMessage = `**Core Identity**
    - *Italics* for emphasis
    - \`Code blocks\` for technical data
    - Limit emojis to 1-2 per message maximum
+   - Consider the search results when forming your response
 
 4. **Safety & Compliance**
    - Automatic rejection triggers:
@@ -135,41 +133,37 @@ export class LLMManager {
 
         const tools = [
             // createGetUserTool(this.bot, message.guild?.id),
-            new GetUserTool(this.bot, message.guild?.id),
-            createGetGuildTool(this.bot),
-            createGetMessagesTool(this.bot, message.channel.id),
+            // new GetUserTool(this.bot, message.guild?.id),
+            ...new DiscordToolkit(this.bot, message.guild?.id).tools,
             new Calculator(),
             new DuckDuckGoSearch({ maxResults: 10 }),
             new WikipediaQueryRun(),
             getTimeTool,
+            translate,
+            createCallCommnandTool(this.bot),
             // addEmbedsTool,
         ] as DynamicStructuredTool<any>[];
 
-        if (message.guild) {
-            tools.push(createGetChannelTool(this.bot, message.guild.id));
-            tools.push(createGetRoleTool(this.bot, message.guild.id));
-        }
-
-        const schema = z.object({
-            embeds: z.array(
-                z
-                    .object({
-                        title: z.string(),
-                        description: z.string().optional(),
-                        url: z.string().optional(),
-                        color: z.number().optional(),
-                        fields: z.array(
-                            z.object({
-                                name: z.string(),
-                                value: z.string(),
-                                inline: z.boolean(),
-                            })
-                        ),
-                    })
-                    .describe("An embed object.")
-            ),
-            content: z.string(),
-        });
+        // const schema = z.object({
+        //     embeds: z.array(
+        //         z
+        //             .object({
+        //                 title: z.string(),
+        //                 description: z.string().optional(),
+        //                 url: z.string().optional(),
+        //                 color: z.number().optional(),
+        //                 fields: z.array(
+        //                     z.object({
+        //                         name: z.string(),
+        //                         value: z.string(),
+        //                         inline: z.boolean(),
+        //                     })
+        //                 ),
+        //             })
+        //             .describe("An embed object.")
+        //     ),
+        //     content: z.string(),
+        // });
 
         if (!mongoose.connection.db) return sessionId;
 
@@ -226,6 +220,7 @@ export class LLMManager {
                 url: string;
             }[];
         },
+        options: any,
         sessionId: string
     ): Promise<
         | {
@@ -283,7 +278,7 @@ export class LLMManager {
 
         const finalState = await session.invoke(
             { messages },
-            { configurable: { thread_id: sessionId } }
+            { configurable: { thread_id: sessionId, ...options } }
         );
 
         // console.log(JSON.stringify(finalState, null, 2));

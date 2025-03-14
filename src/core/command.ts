@@ -48,8 +48,6 @@ export interface Command {
 //     execute(context: InteractionContext<DiscordAssistant>): Promise<void>;
 // }
 
-
-
 export class CommandManager {
     public prefix: string;
     public commands: Map<string, Command>;
@@ -108,8 +106,9 @@ export class CommandManager {
         if (!message.content.startsWith(this.prefix)) {
             return;
         }
-
-        const [commandName, ...args] = message.content
+    }
+    public async handleContent(content: string, message: Message) {
+        const [commandName, ...args] = content
             .slice(this.prefix.length)
             .trim()
             .split(/ +/);

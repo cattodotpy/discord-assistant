@@ -118,12 +118,22 @@ export async function handleMessage(
         }
     }
 
+    const embeds = [] as EmbedBuilder[];
+
     // console.log("Message content: ", messageContent);
     const responseChunks = (await client.llm
         .generate(
             {
                 content: messageContent,
                 attachments: await Promise.all(attachments),
+            },
+            {
+                channelId: request.channelId,
+                guildId: request.guildId,
+                userId: request.author.id,
+                addEmbed: (embed: EmbedBuilder) => {
+                    embeds.push(embed);
+                },
             },
             sessionId
         )
@@ -188,11 +198,7 @@ export async function handleMessage(
 
     messages.push({
         content: currentContent,
-        embeds: responseChunks.embeds
-            ? responseChunks?.embeds?.map((embed: any) => {
-                  return new EmbedBuilder(embed);
-              })
-            : [],
+        embeds: embeds,
     });
 
     for (const message of messages) {
