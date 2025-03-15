@@ -26,7 +26,7 @@ export async function handleMessage(
     if (request.author.bot) return;
     // console.log(client.commands.prefix);
     if (request.content.startsWith(client.commands.prefix)) {
-        console.log("Handling command");
+        // console.log("Handling command");
         return await client.commands.handleMessage(request);
     }
     const user = await getUser(request.author.id);
@@ -218,9 +218,14 @@ export async function handleMessage(
     }
 }
 
-
-export async function handleInteraction(interaction: CommandInteraction, client: DiscordAssistant) {
+export async function handleInteraction(
+    interaction: CommandInteraction,
+    client: DiscordAssistant
+) {
     if (interaction.isChatInputCommand()) {
-        return await client.commands.executeCommand(interaction.commandName, interaction);
+        return await client.commands.executeCommand(
+            interaction.commandName,
+            interaction
+        );
     }
 }

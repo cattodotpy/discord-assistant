@@ -299,4 +299,12 @@ export class LLMManager {
 
         return finalState.messages[finalState.messages.length - 1];
     }
+
+    async simpleGenerate(
+        prompt: string,
+    ): Promise<string | undefined> {
+        const response = await this.client.invoke(prompt);
+
+        return response?.content.toString();
+    }
 }

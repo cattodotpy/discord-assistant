@@ -26,14 +26,19 @@ export default class HeyCommand implements Command {
         },
     ];
 
-    async execute(ctx: IContext): Promise<void> {
+    async execute(ctx: IContext): Promise<any> {
         const question = ctx.getArgument("question");
 
         if (!question) {
-            await ctx.reply("Hey, what's up?");
-            return;
+            return await ctx.reply("Please provide a question.");
         }
 
-        await ctx.reply(`Hey, ${question}`);
+        const llm = ctx.bot.llm;
+
+        await ctx.typing();
+
+        const response = await llm.simpleGenerate(question);
+
+        await ctx.reply(response || "I don't know.");
     }
 }
