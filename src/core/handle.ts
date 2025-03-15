@@ -1,4 +1,5 @@
 import {
+    CommandInteraction,
     EmbedBuilder,
     ThreadAutoArchiveDuration,
     ThreadChannel,
@@ -207,5 +208,12 @@ export async function handleMessage(
             embeds: message.embeds,
             allowedMentions: { roles: [], users: [] },
         });
+    }
+}
+
+
+export async function handleInteraction(interaction: CommandInteraction, client: DiscordAssistant) {
+    if (interaction.isChatInputCommand()) {
+        return await client.commands.executeCommand(interaction.commandName, interaction);
     }
 }

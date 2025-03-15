@@ -1,7 +1,7 @@
 import chalk from "chalk";
-import { Client, type ClientOptions } from "discord.js";
+import { Client, type ClientOptions, type CommandInteraction } from "discord.js";
 import z from "zod";
-import { handleMessage } from "./handle";
+import { handleInteraction, handleMessage } from "./handle";
 import { LLMManager } from "./llm";
 import mongoose from "mongoose";
 import { type Command, CommandManager } from "./command";
@@ -65,6 +65,10 @@ export class DiscordAssistant extends Client {
 
         this.on("messageCreate", async (message) => {
             return await handleMessage(message, this);
+        });
+
+        this.on("interactionCreate", async (interaction) => {
+            return await handleInteraction(interaction as CommandInteraction, this);
         });
 
         mongoose.connect(this.env.MONGODB_URI).then(

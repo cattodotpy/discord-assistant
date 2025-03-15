@@ -1,10 +1,14 @@
 import { type Command } from "@/command";
 import type { IContext } from "@/context";
+import { SlashCommandBuilder } from "discord.js";
 
 export default class PingCommand implements Command {
     name = "ping";
     aliases = [];
     description = "Returns latency and API ping.";
+    builder = new SlashCommandBuilder()
+        .setName("ping")
+        .setDescription("Returns latency and API ping.");
 
     async execute(ctx: IContext): Promise<void> {
         const latency = Date.now() - ((ctx.message || ctx.interaction)?.createdTimestamp as number);

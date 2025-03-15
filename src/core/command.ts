@@ -1,4 +1,5 @@
 import type { CommandInteraction, Message } from "discord.js";
+import { SlashCommandBuilder } from "discord.js";
 import type { DiscordAssistant } from "./client";
 import { type IContext, InteractionContext, MessageContext } from "./context";
 
@@ -36,6 +37,7 @@ export interface Command {
     name: string;
     aliases: string[];
     description: string;
+    builder?: SlashCommandBuilder;
 
     execute<T extends IContext>(context: T): Promise<void>;
 }
@@ -62,7 +64,12 @@ export class CommandManager {
         this.aliases = new Map();
     }
 
-    public register(command: Command) {
+    public async register(command: Command) {
+        if (command.builder) {
+            await this.bot.application?.commands.create(command.builder);
+            console.log(`Command ${command.name} registered`);
+        }
+
         this.commands.set(command.name, command);
 
         this.aliases.set(command.name, command.name);
