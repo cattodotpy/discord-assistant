@@ -44,6 +44,10 @@ export interface IContext {
     send(content: InteractionSendMessage): Promise<Message>;
     typing(): Promise<void>;
     typing(isEphemeral: boolean): Promise<void>;
+
+    getArgument(name: string): string | null;
+    getArgument<T>(name: string): T | null;
+    getArgument<T>(name: string, def: T): T;
 }
 
 export class MessageContext<T extends DiscordAssistant> implements IContext {
@@ -61,6 +65,36 @@ export class MessageContext<T extends DiscordAssistant> implements IContext {
         this.command = ctx.command!;
         this.channel = this.message.channel;
         this.guild = this.message.guild;
+    }
+
+    getArgument(name: string): string | null;
+    getArgument<T>(name: string): T | null;
+    getArgument<T>(name: string, def: T): T;
+    getArgument<T>(name: string, def?: T): T | null {
+        const content = this.message.content;
+        const args = content.split(" ");
+        const commandArgs = this.command.arguments;
+
+        for (let i = 1; i <= args.length; i++) {
+            // Start from 1 to skip the command name.
+            const commandArg = commandArgs[i - 1];
+            const arg = args[i];
+
+            if (!commandArg) {
+                break;
+            }
+
+            if (commandArg.name === name) {
+                // return commandArg.transformer(arg) as T;
+                if (commandArg.transformer) {
+                    return commandArg.transformer(arg) as T;
+                }
+
+                return arg as unknown as T;
+            }
+        }
+
+        return def || null;
     }
 
     static fromMessage<T extends DiscordAssistant>(
@@ -172,5 +206,23 @@ export class InteractionContext<T extends DiscordAssistant>
         }
 
         await this.interaction.deferReply({ ephemeral: isEphemeral });
+    }
+
+    getArgument(name: string): string | null;
+    getArgument<T>(name: string): T | null;
+    getArgument<T>(name: string, def: T): T;
+    getArgument<T>(name: string, def?: T): T | null {
+        const options = this.interaction.options;
+        const arg = options.get(name);
+
+        if (!arg) {
+            return def || null;
+        }
+
+        if (arg.value) {
+            return arg.value as T;
+        }
+
+        return def || null;
     }
 }

@@ -1,11 +1,16 @@
 import chalk from "chalk";
-import { Client, type ClientOptions, type CommandInteraction } from "discord.js";
+import {
+    Client,
+    type ClientOptions,
+    type CommandInteraction,
+} from "discord.js";
 import z from "zod";
 import { handleInteraction, handleMessage } from "./handle";
 import { LLMManager } from "./llm";
 import mongoose from "mongoose";
 import { type Command, CommandManager } from "./command";
 import PingCommand from "../commands/ping";
+import HeyCommand from "../commands/hey";
 
 const envSchema = z.object({
     DISCORD_TOKEN: z.string(),
@@ -17,7 +22,7 @@ const envSchema = z.object({
 
 type Env = z.infer<typeof envSchema>;
 
-const commands = [new PingCommand()] as Command[];
+const commands = [new PingCommand(), new HeyCommand()] as Command[];
 
 export class DiscordAssistant extends Client {
     private env: Env;
@@ -40,10 +45,6 @@ export class DiscordAssistant extends Client {
         );
         this.commands = new CommandManager(this.env.COMMAND_PREFIX, this);
 
-        for (const command of commands) {
-            this.commands.register(command);
-        }
-
         this.initialize().catch(console.error);
     }
 
@@ -61,6 +62,10 @@ export class DiscordAssistant extends Client {
                     new Date(this.startTimestamp).toLocaleString()
                 )}`
             );
+
+            for (const command of commands) {
+                this.commands.register(command);
+            }
         });
 
         this.on("messageCreate", async (message) => {
@@ -68,7 +73,10 @@ export class DiscordAssistant extends Client {
         });
 
         this.on("interactionCreate", async (interaction) => {
-            return await handleInteraction(interaction as CommandInteraction, this);
+            return await handleInteraction(
+                interaction as CommandInteraction,
+                this
+            );
         });
 
         mongoose.connect(this.env.MONGODB_URI).then(

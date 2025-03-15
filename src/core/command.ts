@@ -1,4 +1,8 @@
-import type { CommandInteraction, Message } from "discord.js";
+import type {
+    CommandInteraction,
+    Message,
+    SlashCommandOptionsOnlyBuilder,
+} from "discord.js";
 import { SlashCommandBuilder } from "discord.js";
 import type { DiscordAssistant } from "./client";
 import { type IContext, InteractionContext, MessageContext } from "./context";
@@ -33,11 +37,22 @@ import { type IContext, InteractionContext, MessageContext } from "./context";
 //     }
 // }
 
+export interface Argument<T = any> {
+    name: string;
+    description: string;
+
+    required?: boolean;
+    choices?: Record<string, string>;
+
+    transformer?: (value: string) => T;
+}
+
 export interface Command {
     name: string;
     aliases: string[];
     description: string;
-    builder?: SlashCommandBuilder;
+    builder?: SlashCommandBuilder | SlashCommandOptionsOnlyBuilder;
+    arguments: Argument[];
 
     execute<T extends IContext>(context: T): Promise<void>;
 }
@@ -66,7 +81,7 @@ export class CommandManager {
 
     public async register(command: Command) {
         if (command.builder) {
-            await this.bot.application?.commands.create(command.builder);
+            await this.bot.application!.commands.create(command.builder);
             console.log(`Command ${command.name} registered`);
         }
 
