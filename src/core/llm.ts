@@ -24,6 +24,7 @@ import { MongoDBSaver } from "./checkpointer";
 import mongoose from "mongoose";
 import { DiscordToolkit } from "../tools/toolkit";
 import createCallCommnandTool from "../tools/callCommand";
+import { ChatPromptTemplate } from "@langchain/core/prompts";
 
 const defaultMessage = `You are a **Discord-integrated assistant** designed to be **friendly, helpful, and engaging** while making full use of Discord's formatting, mentions, and embed tools. Your goal is to assist users across multiple servers, handling a variety of requests efficiently.  
 
@@ -84,6 +85,7 @@ const StateAnnotation = Annotation.Root({
 
 export class LLMManager {
     private client: ChatOpenAI;
+    // private titleClient: ChatOpenAI;
     private bot: DiscordAssistant;
     public sessions: Collection<string, CompiledStateGraph<any, any, any>>;
 
@@ -98,6 +100,12 @@ export class LLMManager {
         });
         this.sessions = new Collection();
         this.bot = bot;
+
+        // this.titleClient = this.client.withConfig(
+        //     {
+
+        //     }
+        // )
 
         this.initialize().catch(console.error);
     }
@@ -190,6 +198,32 @@ export class LLMManager {
         // Bun.write(`./graph_images/${sessionId}.png`, await image.arrayBuffer());
 
         return sessionId;
+    }
+
+    async generateTitle(message: string): Promise<string | undefined> {
+        const promptTemplate = ChatPromptTemplate.fromMessages([
+            [
+                "system",
+                `Return a suitable title within a few words for the given message, just like a newspaper headline. Only return the title in your response, no additional information is needed.
+                Examples:
+                Message: "What is the capital of Japan?"
+                Title: Capital of Japan
+
+                Message: "What is the weather in New York?"
+                Title: Weather in New York
+
+                Message: "Translate 'Hello' to French."
+                Title: French Translation of 'Hello'
+                `,
+            ],
+            ["human", "{content}"],
+        ]);
+
+        const prompt = await promptTemplate.invoke({ content: message });
+
+        const response = await this.client.invoke(prompt);
+
+        return response?.content.toString();
     }
 
     async generate(

@@ -113,6 +113,8 @@ export class CommandManager {
         if (!message.content.startsWith(this.prefix)) {
             return;
         }
+
+        await this.handleContent(message.content, message);
     }
     public async handleContent(content: string, message: Message) {
         const [commandName, ...args] = content

@@ -24,7 +24,9 @@ export async function handleMessage(
     client: DiscordAssistant
 ) {
     if (request.author.bot) return;
+    // console.log(client.commands.prefix);
     if (request.content.startsWith(client.commands.prefix)) {
+        console.log("Handling command");
         return await client.commands.handleMessage(request);
     }
     const user = await getUser(request.author.id);
@@ -56,6 +58,11 @@ export async function handleMessage(
         thread = await request.startThread({
             name: "AI Response",
             autoArchiveDuration: ThreadAutoArchiveDuration.OneHour,
+        });
+
+        client.llm.generateTitle(message).then((title) => {
+            if (!title) return;
+            thread.setName(title);
         });
 
         user.threads.push(thread.id);
