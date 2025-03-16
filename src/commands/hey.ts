@@ -1,4 +1,4 @@
-import { createCommand } from "@/command";
+import { createCommand } from "../core/command";
 import { SlashCommandBuilder } from "discord.js";
 
 export const heyCommand = createCommand(
