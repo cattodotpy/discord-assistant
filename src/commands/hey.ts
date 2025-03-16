@@ -1,38 +1,33 @@
-import { type Argument, type Command } from "@/command";
-import type { IContext } from "@/context";
+import { createCommand } from "@/command";
 import { SlashCommandBuilder } from "discord.js";
 
-export default class HeyCommand implements Command {
-    name = "hey";
-    aliases = [];
-    description = "Hey, what's up?";
-    builder = new SlashCommandBuilder()
-        .addStringOption((option) =>
-            option
-                .setName("question")
-                .setDescription("Ask a question.")
-                .setRequired(true)
-        )
-        .setName("hey")
-        .setDescription("Greets the bot.");
-
-    arguments = [
-        {
-            name: "question",
-            description: "Ask a question.",
-            required: true,
-
-            // transformer: (value: string) => value,
+export const heyCommand = createCommand(
+    {
+        name: "hey",
+        description: "Greets the bot.",
+        builder: new SlashCommandBuilder()
+            .addStringOption((option) =>
+                option
+                    .setName("question")
+                    .setDescription("Ask a question.")
+                    .setRequired(true)
+            )
+            .setName("hey")
+            .setDescription("Greets the bot."),
+        arguments: {
+            question: {
+                type: "string",
+                required: true,
+                name: "question",
+                description: "Ask a question.",
+            },
         },
-    ];
+        // textCommandOnly: true,
 
-    async execute(ctx: IContext): Promise<any> {
-        const question = ctx.getArgument("question");
-
-        if (!question) {
-            return await ctx.reply("Please provide a question.");
-        }
-
+        syntax: ["question"],
+    },
+    async (ctx, { question }) => {
+        // console.log(question);
         const llm = ctx.bot.llm;
 
         await ctx.typing();
@@ -41,4 +36,4 @@ export default class HeyCommand implements Command {
 
         await ctx.reply(response || "I don't know.");
     }
-}
+);

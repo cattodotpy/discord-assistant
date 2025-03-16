@@ -57,6 +57,7 @@ export class MessageContext<T extends DiscordAssistant> implements IContext {
     command: Command;
     channel: TextBasedChannel;
     guild: Guild | null;
+    arguments: Record<string, any> = {};
 
     constructor(ctx: ContextOption) {
         this.message = ctx.message!;
@@ -65,36 +66,52 @@ export class MessageContext<T extends DiscordAssistant> implements IContext {
         this.command = ctx.command!;
         this.channel = this.message.channel;
         this.guild = this.message.guild;
+
+        this.getAllArguments();
+    }
+
+    private getAllArguments() {
+        const content = this.message.content;
+        const args = content.split(" ").slice(1);
+        const commandSyntax = this.command.syntax || [];
+
+        // console.log(args);
+
+        for (let i = 0; i < commandSyntax.length; i++) {
+            // this.arguments[commandSyntax[i]] = args[i];
+            const value = args[i];
+            // console.log(value);
+            const arg = this.command?.arguments
+                ? this.command.arguments[commandSyntax[i]]
+                : undefined;
+
+            // console.log(arg);
+
+            if (!arg) {
+                continue;
+            }
+
+            if (!value) {
+                this.arguments[commandSyntax[i]] = null;
+            } else if (arg.transformer) {
+                this.arguments[commandSyntax[i]] = arg.transformer(value);
+            } else {
+                this.arguments[commandSyntax[i]] = value;
+            }
+        }
     }
 
     getArgument(name: string): string | null;
     getArgument<T>(name: string): T | null;
     getArgument<T>(name: string, def: T): T;
     getArgument<T>(name: string, def?: T): T | null {
-        const content = this.message.content;
-        const args = content.split(" ");
-        const commandArgs = this.command.arguments;
+        const value = this.arguments[name];
 
-        for (let i = 1; i <= args.length; i++) {
-            // Start from 1 to skip the command name.
-            const commandArg = commandArgs[i - 1];
-            const arg = args[i];
-
-            if (!commandArg) {
-                break;
-            }
-
-            if (commandArg.name === name) {
-                // return commandArg.transformer(arg) as T;
-                if (commandArg.transformer) {
-                    return commandArg.transformer(arg) as T;
-                }
-
-                return arg as unknown as T;
-            }
+        if (!value) {
+            return def || null;
         }
 
-        return def || null;
+        return value as T;
     }
 
     static fromMessage<T extends DiscordAssistant>(
@@ -200,12 +217,12 @@ export class InteractionContext<T extends DiscordAssistant>
         );
     }
 
-    public async typing(isEphemeral: boolean = false) {
+    public async typing() {
         if (this.interaction.deferred) {
             throw new Error("Interaction already responded.");
         }
 
-        await this.interaction.deferReply({ ephemeral: isEphemeral });
+        await this.interaction.deferReply();
     }
 
     getArgument(name: string): string | null;

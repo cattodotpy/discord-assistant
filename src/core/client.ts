@@ -10,7 +10,7 @@ import { LLMManager } from "./llm";
 import mongoose from "mongoose";
 import { type Command, CommandManager } from "./command";
 import PingCommand from "../commands/ping";
-import HeyCommand from "../commands/hey";
+import { heyCommand } from "../commands/hey";
 
 const envSchema = z.object({
     DISCORD_TOKEN: z.string(),
@@ -22,7 +22,7 @@ const envSchema = z.object({
 
 type Env = z.infer<typeof envSchema>;
 
-const commands = [new PingCommand(), new HeyCommand()] as Command[];
+const commands = [new PingCommand(), heyCommand] as Command[];
 
 export class DiscordAssistant extends Client {
     private env: Env;

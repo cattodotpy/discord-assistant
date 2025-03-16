@@ -6,7 +6,7 @@ export default class PingCommand implements Command {
     name = "ping";
     aliases = [];
     description = "Returns latency and API ping.";
-    arguments = [];
+    // arguments = [];
 
     builder = new SlashCommandBuilder()
         .setName("ping")
