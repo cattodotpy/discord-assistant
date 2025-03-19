@@ -101,22 +101,23 @@ export class DiscordToolkit extends BaseToolkit {
                     await interaction.update({
                         content: `<@${author}> has confirmed the ban for user ${member.user.tag}`,
                         components: [],
+                        allowedMentions: { users: [] },
                     });
-                    response = "User banned";
+                    response = "User confirmed ban";
                 } else {
                     await interaction.update({
                         content: "Ban cancelled",
                         components: [],
                     });
 
-                    response = "Ban cancelled";
+                    response = "User cancelled ban";
                 }
             });
 
             // await member.ban({ reason });
 
             while (!response) {
-                await new Promise((resolve) => setTimeout(resolve, 1000));
+                await new Promise((resolve) => setTimeout(resolve, 500));
             }
 
             return response;
