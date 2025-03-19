@@ -8,6 +8,7 @@ import {
 import type { DiscordAssistant } from "./client";
 import axios from "axios";
 import User from "../schema/User";
+import { autocomplete } from "duck-duck-scrape";
 
 async function getUser(discordId: string) {
     const user = await User.findOne({ discordId });
@@ -142,6 +143,8 @@ export async function handleMessage(
                 addEmbed: (embed: EmbedBuilder) => {
                     embeds.push(embed);
                 },
+                threadId: thread.id,
+                authorId: request.author.id,
             },
             sessionId
         )

@@ -7,7 +7,14 @@ import {
 import GetUserTool from "./getUser";
 import type { LangGraphRunnableConfig } from "@langchain/langgraph";
 import { z } from "zod";
-import { EmbedBuilder } from "discord.js";
+import {
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonInteraction,
+    ButtonStyle,
+    EmbedBuilder,
+    MessageComponentInteraction,
+} from "discord.js";
 
 export class DiscordToolkit extends BaseToolkit {
     private client: DiscordAssistant;
@@ -22,8 +29,108 @@ export class DiscordToolkit extends BaseToolkit {
             this.getChannel,
             this.getRole,
             this.includeEmbeds,
+            this.banUser,
         ];
     }
+
+    banUser = tool(
+        async ({ userId, reason }, config: LangGraphRunnableConfig) => {
+            const guildId = config.configurable?.guildId;
+            const guild = this.client.guilds.cache.get(guildId);
+            const channel = guild?.channels.cache.get(
+                config.configurable?.threadId
+            );
+            const member = guild?.members.cache.get(userId);
+            const author = config.configurable?.authorId;
+
+            if (!author) return "Author not found";
+
+            if (!guild || !channel || !channel.isSendable()) {
+                return "Guild or channel not found";
+            }
+
+            if (!member) {
+                return "Member not found";
+            }
+
+            // send a message to the channel
+
+            // await channel.send(`Banning user ${member.user.tag} for ${reason}`);
+            const embed = new EmbedBuilder()
+                .setTitle("Confirmation")
+                .setDescription(`AI requested to ban user ${member.user.tag}`)
+                .addFields({
+                    name: "Reason",
+                    value: reason,
+                });
+
+            const row = new ActionRowBuilder<ButtonBuilder>().addComponents([
+                new ButtonBuilder()
+                    .setLabel("Confirm")
+                    .setStyle(ButtonStyle.Danger)
+                    .setCustomId("confirmBan"),
+                new ButtonBuilder()
+                    .setLabel("Cancel")
+                    .setStyle(ButtonStyle.Secondary)
+                    .setCustomId("cancelBan"),
+            ]);
+
+            const message = await channel.send({
+                embeds: [embed],
+                components: [row],
+            });
+
+            const filter = (interaction: MessageComponentInteraction) => {
+                return (
+                    interaction.user.id === author &&
+                    (interaction.customId === "confirmBan" ||
+                        interaction.customId === "cancelBan")
+                );
+            };
+
+            const collector = message.createMessageComponentCollector({
+                filter,
+                time: 15000,
+            });
+
+            let response = "";
+
+            collector.on("collect", async (interaction) => {
+                if (interaction.customId === "confirmBan") {
+                    // await member.ban({ reason });
+                    await interaction.update({
+                        content: `<@${author}> has confirmed the ban for user ${member.user.tag}`,
+                        components: [],
+                    });
+                    response = "User banned";
+                } else {
+                    await interaction.update({
+                        content: "Ban cancelled",
+                        components: [],
+                    });
+
+                    response = "Ban cancelled";
+                }
+            });
+
+            // await member.ban({ reason });
+
+            while (!response) {
+                await new Promise((resolve) => setTimeout(resolve, 1000));
+            }
+
+            return response;
+        },
+        {
+            name: "banUser",
+            description:
+                "Requests to ban a user in a server by their ID, with an optional reason. The operator is guaranteed to have the necessary permissions.",
+            schema: z.object({
+                userId: z.string(),
+                reason: z.string().optional().default("No reason provided"),
+            }),
+        }
+    );
 
     getMessages = tool(
         async ({ n = 10 }, config: LangGraphRunnableConfig) => {
