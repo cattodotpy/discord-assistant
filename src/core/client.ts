@@ -10,7 +10,9 @@ import { LLMManager } from "./llm";
 import mongoose from "mongoose";
 import { type Command, CommandManager } from "./command";
 import PingCommand from "../commands/ping";
+import { Mistral } from "@mistralai/mistralai";
 import { heyCommand } from "../commands/hey";
+import { ocrCommand } from "../commands/ocr";
 
 const envSchema = z.object({
     DISCORD_TOKEN: z.string(),
@@ -18,17 +20,19 @@ const envSchema = z.object({
     LLM_BASE_URL: z.string(),
     MONGODB_URI: z.string(),
     COMMAND_PREFIX: z.string().default("$"),
+    MISTRAL_API_KEY: z.string(),
 });
 
 type Env = z.infer<typeof envSchema>;
 
-const commands = [new PingCommand(), heyCommand] as Command[];
+const commands = [new PingCommand(), heyCommand, ocrCommand] as Command[];
 
 export class DiscordAssistant extends Client {
     private env: Env;
     private startTimestamp: number;
     public llm: LLMManager;
     public commands: CommandManager;
+    public mistral: Mistral;
 
     constructor(options: ClientOptions) {
         super(options);
@@ -43,6 +47,9 @@ export class DiscordAssistant extends Client {
             },
             this
         );
+        this.mistral = new Mistral({
+            apiKey: this.env.MISTRAL_API_KEY,
+        });
         this.commands = new CommandManager(this.env.COMMAND_PREFIX, this);
 
         this.initialize().catch(console.error);
