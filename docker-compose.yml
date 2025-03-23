@@ -9,6 +9,7 @@ services:
       - LANGSMITH_ENDPOINT=${LANGSMITH_ENDPOINT}
       - LANGSMITH_API_KEY=${LANGSMITH_API_KEY}
       - LANGSMITH_PROJECT=${LANGSMITH_PROJECT}
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
       - MONGODB_URI=mongodb://mongo:27017
     pull_policy: always
     restart: always
