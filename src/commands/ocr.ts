@@ -60,14 +60,24 @@ export const ocrCommand = createCommand(
 
         for (const attachment of attachments.values()) {
             const url = attachment.url;
-
-            const response = await ctx.bot.mistral.ocr.process({
-                model: "mistral-ocr-latest",
-                document: {
-                    type: "image_url",
-                    imageUrl: url,
-                },
-            });
+            let response;
+            if (url.endsWith(".pdf")) {
+                response = await ctx.bot.mistral.ocr.process({
+                    model: "mistral-ocr-latest",
+                    document: {
+                        type: "document_url",
+                        documentUrl: url,
+                    },
+                });
+            } else {
+                response = await ctx.bot.mistral.ocr.process({
+                    model: "mistral-ocr-latest",
+                    document: {
+                        type: "image_url",
+                        imageUrl: url,
+                    },
+                });
+            }
 
             if (!response) {
                 await ctx.reply("Failed to process image.");
