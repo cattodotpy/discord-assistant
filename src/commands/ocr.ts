@@ -61,7 +61,7 @@ export const ocrCommand = createCommand(
         for (const attachment of attachments.values()) {
             const url = attachment.url;
             let response;
-            if (url.endsWith(".pdf")) {
+            if (attachment.name.endsWith(".pdf")) {
                 response = await ctx.bot.mistral.ocr.process({
                     model: "mistral-ocr-latest",
                     document: {
@@ -84,7 +84,13 @@ export const ocrCommand = createCommand(
                 return;
             }
 
-            const sourceBuffer = Buffer.from(await ky.get(url).arrayBuffer());
+            let sourceBuffer;
+
+            if (attachment.name.endsWith(".pdf")) {
+                sourceBuffer;
+            } else {
+                sourceBuffer = [Buffer.from(await ky.get(url).arrayBuffer())];
+            }
             let finalImages = [];
 
             for (let i = 0; i < response.pages.length; i++) {
@@ -96,6 +102,7 @@ export const ocrCommand = createCommand(
                         continue;
                     }
 
+                    console.log(image);
                     if (
                         image.bottomRightX === null ||
                         image.bottomRightY === null ||

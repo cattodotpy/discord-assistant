@@ -110,6 +110,10 @@ export class LLMManager {
         this.initialize().catch(console.error);
     }
 
+    changeModel(model: string) {
+        this.client.model = model;
+    }
+
     private async initialize() {}
 
     async createSession(sessionId: string, message: Message): Promise<string> {

@@ -13,6 +13,7 @@ import PingCommand from "../commands/ping";
 import { Mistral } from "@mistralai/mistralai";
 import { heyCommand } from "../commands/hey";
 import { ocrCommand } from "../commands/ocr";
+import { devCommand } from "../commands/developer";
 
 const envSchema = z.object({
     DISCORD_TOKEN: z.string(),
@@ -25,7 +26,12 @@ const envSchema = z.object({
 
 type Env = z.infer<typeof envSchema>;
 
-const commands = [new PingCommand(), heyCommand, ocrCommand] as Command[];
+const commands = [
+    new PingCommand(),
+    heyCommand,
+    ocrCommand,
+    devCommand,
+] as Command[];
 
 export class DiscordAssistant extends Client {
     private env: Env;
